@@ -1,13 +1,14 @@
-from typing import List
+
 from app.erp.adapter import ERPAdapter
-from app.erp.schemas import AttendanceRecord, FeeStatus, TimetableSession, MarkRecord
 from app.erp.repository import ERPRepository
+from app.erp.schemas import AttendanceRecord, FeeStatus, MarkRecord, TimetableSession
+
 
 class MockERPAdapter(ERPAdapter):
     def __init__(self, repository: ERPRepository):
         self.repository = repository
         
-    async def get_attendance(self, student_id: int) -> List[AttendanceRecord]:
+    async def get_attendance(self, student_id: int) -> list[AttendanceRecord]:
         records = await self.repository.get_attendance_for_student(student_id)
         return [
             AttendanceRecord(
@@ -19,7 +20,7 @@ class MockERPAdapter(ERPAdapter):
             for att, course in records
         ]
         
-    async def get_fee_status(self, student_id: int) -> List[FeeStatus]:
+    async def get_fee_status(self, student_id: int) -> list[FeeStatus]:
         fees = await self.repository.get_fees_for_student(student_id)
         return [
             FeeStatus(
@@ -32,7 +33,7 @@ class MockERPAdapter(ERPAdapter):
             for fee in fees
         ]
         
-    async def get_timetable(self, student_id: int) -> List[TimetableSession]:
+    async def get_timetable(self, student_id: int) -> list[TimetableSession]:
         sessions = await self.repository.get_timetable_for_student(student_id)
         return [
             TimetableSession(
@@ -46,7 +47,7 @@ class MockERPAdapter(ERPAdapter):
             for tt, course in sessions
         ]
         
-    async def get_marks(self, student_id: int) -> List[MarkRecord]:
+    async def get_marks(self, student_id: int) -> list[MarkRecord]:
         marks = await self.repository.get_marks_for_student(student_id)
         return [
             MarkRecord(

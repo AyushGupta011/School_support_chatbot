@@ -5,19 +5,20 @@ Revises:
 Create Date: 2026-10-01 10:00:00.000000
 
 """
-from typing import Sequence, Union
 import os
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
 revision: str = '001'
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -106,11 +107,11 @@ def upgrade() -> None:
     
     # HNSW Index on embedding
     op.execute(
-        f"CREATE INDEX ix_chunks_embedding ON chunks USING hnsw (embedding vector_cosine_ops);"
+        "CREATE INDEX ix_chunks_embedding ON chunks USING hnsw (embedding vector_cosine_ops);"
     )
     # GIN index on tsvector
     op.execute(
-        f"CREATE INDEX ix_chunks_tsv ON chunks USING gin (tsv);"
+        "CREATE INDEX ix_chunks_tsv ON chunks USING gin (tsv);"
     )
 
     op.create_table('unanswered_queries',

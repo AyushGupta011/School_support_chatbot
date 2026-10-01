@@ -4,13 +4,18 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from app.api import auth, me
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.core.middleware import setup_middlewares
 
 setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="School Support Chatbot")
+setup_middlewares(app)
+app.include_router(auth.router)
+app.include_router(me.router)
 
 async def get_db_health():
     engine = create_async_engine(settings.database_url)

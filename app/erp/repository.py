@@ -1,7 +1,8 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
-from app.models.erp import Attendance, Fee, Timetable, Mark, Enrollment, Course
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.erp import Attendance, Course, Enrollment, Fee, Mark, Timetable
+
 
 class ERPRepository:
     def __init__(self, session: AsyncSession):

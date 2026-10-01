@@ -1,10 +1,13 @@
-import pytest
 import datetime
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from app.models.base import Base
-from app.models.erp import Student, Course, Attendance, User
-from app.erp.repository import ERPRepository
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from app.erp.mock import MockERPAdapter
+from app.erp.repository import ERPRepository
+from app.models.base import Base
+from app.models.erp import Attendance, Course, Student, User
+
 
 @pytest.fixture
 async def memory_db():

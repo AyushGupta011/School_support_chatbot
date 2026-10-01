@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import List, Optional
 import datetime
+
+from pydantic import BaseModel
+
 
 class AttendanceRecord(BaseModel):
     course_code: str

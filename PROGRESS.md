@@ -28,3 +28,18 @@
   - `make seed` to idempotently reset and seed the database.
   - `make test` to verify `ERPAdapter` isolates cross-student queries.
 - **Known Issues:** None.
+
+## Phase 2: Authentication and security layer
+- **Status:** Done
+- **Decisions Made:**
+  - Adopted `argon2` for secure password hashing via `passlib[argon2]`.
+  - Implemented stateless short-lived JWTs (15 min) along with rotation and reuse detection for refresh tokens using Redis.
+  - Implemented `get_current_student` dependency which enforces roles and derives the critical `student_id` solely from the trusted token payload, never raw input.
+  - Used Redis `ZSET` based sliding-window for tracking invalid login attempts (locking out IPs/users after 5 consecutive failures) and generic rate limits.
+  - Added robust security middleware (X-Content-Type-Options, X-Frame-Options, HSTS, XSS protection), standard CORS, and body size limits (5MB).
+  - Structured audit logging implemented for authentication lifecycle events (success, failure, lockout).
+  - Test suite built covering rate limits, role enforcements, token expiration, rotation, invalid logins. Mocked Redis via `fakeredis`.
+- **How to run:**
+  - `make test` to verify security policies and authentication flows.
+  - Launch app and POST to `/auth/login` to retrieve tokens, then GET `/me/` using Bearer header.
+- **Known Issues:** None.

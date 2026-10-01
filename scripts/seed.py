@@ -1,16 +1,23 @@
 import asyncio
-import os
 import random
 from datetime import date, timedelta
+
 from faker import Faker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy import select, delete
-from passlib.hash import bcrypt
+from passlib.hash import argon2
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.core.config import settings
 from app.models.erp import (
-    User, Student, Course, Enrollment, Attendance, Fee,
-    Timetable, Mark, Faculty, Document
+    Attendance,
+    Course,
+    Enrollment,
+    Faculty,
+    Fee,
+    Mark,
+    Student,
+    Timetable,
+    User,
 )
 
 fake = Faker()
@@ -35,8 +42,8 @@ async def main():
         await session.commit()
         
         # 1. Create Admins
-        admin1 = User(enrollment_no="admin1", password_hash=bcrypt.hash("adminpass"), role="admin")
-        admin2 = User(enrollment_no="admin2", password_hash=bcrypt.hash("adminpass"), role="admin")
+        admin1 = User(enrollment_no="admin1", password_hash=argon2.hash("adminpass"), role="admin")
+        admin2 = User(enrollment_no="admin2", password_hash=argon2.hash("adminpass"), role="admin")
         session.add_all([admin1, admin2])
         await session.flush()
         
@@ -62,7 +69,7 @@ async def main():
             dept = random.choice(departments)
             user = User(
                 enrollment_no=f"FAC{fake.unique.random_number(digits=4)}",
-                password_hash=bcrypt.hash("facpass"),
+                password_hash=argon2.hash("facpass"),
                 role="faculty"
             )
             session.add(user)
@@ -91,7 +98,7 @@ async def main():
                 
             user = User(
                 enrollment_no=enrollment_no,
-                password_hash=bcrypt.hash("demopass" if i < 3 else "stupass"),
+                password_hash=argon2.hash("demopass" if i < 3 else "stupass"),
                 role="student"
             )
             session.add(user)

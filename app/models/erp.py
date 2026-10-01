@@ -1,11 +1,14 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, Date, ForeignKey, DateTime, Text, JSON
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from sqlalchemy.sql import func
-from app.models.base import Base
-from pgvector.sqlalchemy import Vector
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 import datetime
 import os
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import DateTime, ForeignKey, Text
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
+
+from app.models.base import Base
+
 
 class User(Base):
     __tablename__ = "users"
