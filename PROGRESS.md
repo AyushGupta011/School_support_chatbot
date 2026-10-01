@@ -43,3 +43,19 @@
   - `make test` to verify security policies and authentication flows.
   - Launch app and POST to `/auth/login` to retrieve tokens, then GET `/me/` using Bearer header.
 - **Known Issues:** None.
+
+## Phase 3: Document ingestion and the RAG core
+- **Status:** Done
+- **Decisions Made:**
+  - Created structured sample Markdown documents (attendance, fees, syllabi, exam rules, infrastructure, faculty) in `data/docs/`.
+  - Implemented `ingest.py` supporting Markdown and PDF using `MarkdownHeaderTextSplitter` and `RecursiveCharacterTextSplitter`. Chunk identity tracked via SHA256 hashes to guarantee idempotent upserts. PG `tsvector` dynamically updated on commit.
+  - Developed `hybrid_retrieve` combining `pgvector` cosine similarity and FTS `ts_rank_cd` using Reciprocal Rank Fusion (RRF). Configured metadata filtering support.
+  - Designed `rerank_chunks` supporting both direct passthrough (`vector_only`) and `hybrid_rerank` cross-encoder using `langchain_cohere.CohereRerank`.
+  - Integrated LangGraph with `retrieve -> rerank -> generate` nodes. The `generate` node is strictly constrained by a systemic prompt to cite standard paths `[source, section/page]` or definitively state "I don't know".
+  - Configured `@traceable` spans throughout with `student_id` obfuscation in nodes to prevent PII bleeding into LangSmith.
+  - Engineered resilient testing strategy using dummy embeddings/LLMs (`test_rag.py`) to bypass integration hurdles natively while ensuring logical correctness for RRF, refusals, metadata, chunk boundaries, and citations. 
+- **How to run:**
+  - `make ingest` to parse the `data/docs/` and load them into PostgreSQL.
+  - `python scripts/ask.py "What is the attendance policy?"` to hit the CLI question entrypoint.
+  - `make test` to run RAG evaluation boundaries.
+- **Known Issues:** None.
