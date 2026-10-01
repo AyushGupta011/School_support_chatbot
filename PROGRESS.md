@@ -75,3 +75,34 @@
   - Invoke `POST /chat/` using the student bearer token and a `{"message": "string"}` payload.
   - Returns Server-Sent Events (SSE) `application/x-ndjson` streaming response containing tokens and final outputs.
 - **Known Issues:** None.
+
+## Phase 5: HTTP API and a minimal web UI
+- **Status:** Done
+- **Decisions Made:**
+  - Upgraded `/chat` to utilize SSE (`sse-starlette`) correctly iterating through `astream_events` from the LangGraph run. It emits distinct events for `run_id`, streamed `token` instances, and finally `done` containing the `final_answer`.
+  - Built `POST /chat/feedback` to ingest ratings. It pushes directly to the underlying `Feedback` Postgres schema and mirrors standard interactions to `langsmith` using `create_feedback(run_id, key="user_score", score=score)`.
+  - Added `POST /admin/ingest` requiring strict `admin` JWT capabilities. Spins up an asynchronous background task resolving `app.rag.ingest`.
+  - Implemented `app/core/middleware.py::RequestIDMiddleware` which generates and attaches an `X-Request-ID` across the lifecycle.
+  - Integrated a minimal Web UI hosted natively via `app/api/ui.py` at `/`. It leverages local storage to handle the bearer token transparently and consumes the SSE stream while displaying realtime outputs. Interactive feedback (👍/👎) controls unlock upon completion.
+  - Authored isolated suite `test_api.py` validating strict role segmentation via token checks, hitting explicit `chat` SSE endpoints using `httpx-sse`, and validating proper rate limits (`HTTP 429` on 20+ operations/min).
+- **How to run:**
+  - Access `http://localhost:8000/` via browser. 
+  - Authenticate using `demo_student_1` and `demopass`.
+  - Input prompts to see streaming SSE answers parsing natively in the vanilla JS wrapper. Provide feedback via appended buttons.
+- **Known Issues:** None.
+
+## Phase 6: Evaluation harness using LangSmith and RAGAS
+- **Status:** Done
+- **Decisions Made:**
+  - Created `evals/dataset.jsonl` encapsulating 80 hand-crafted interactions split across `english`, `hinglish`, `adversarial`, `out_of_scope` and `personal_data` domains mapped directly to expected nodes/tools.
+  - Formatted `evals/setup_dataset.py` mapping `.jsonl` directly to `langsmith.Client().create_dataset(...)` allowing distinct metadata attributes per node.
+  - Devised `evals/evaluators.py` introducing bespoke rulesets for `tool_correctness`, `leakage_prevention` (analyzing STUxxx leakage against contextual IDs), and `routing_accuracy`. Designed wrappers embedding RAGAS models via `LangchainLLMWrapper` calculating asynchronous `faithfulness` and `relevancy` scores strictly on the knowledge slice.
+  - Orchestrated `evals/run_eval.py` exploiting LangSmith's robust `aevaluate` targeting the `vector_only` and `hybrid_rerank` matrices, dumping local telemetry.
+  - Authored `evals/ci_gate.py` implementing strict minimum threshold gates enforcing zero leakage parameters alongside minimum contextual precision expectations (`sys.exit(1)` upon failure). Output formatted perfectly to markdown tables inside `evals/results/report.md`.
+  - Built explicit synthetic `evals/generate_testset.py` drafting candidates strictly to a review file rather than polluting production evals. 
+- **How to run:**
+  - Use `python evals/setup_dataset.py` to push to LangSmith.
+  - Call `python evals/run_eval.py --mode [vector_only | hybrid_rerank]` executing the metrics workload across the evaluation array. 
+  - `python evals/ci_gate.py` returns CI exit statuses corresponding to regression tests.
+- **Known Issues:** 
+  - Host environment continues failing to orchestrate `asyncpg` bindings requiring pure-python bypasses where necessary.

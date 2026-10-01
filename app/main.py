@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.api import auth, chat, me
+from app.api import admin, auth, chat, me, ui
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.middleware import setup_middlewares
@@ -17,6 +17,8 @@ setup_middlewares(app)
 app.include_router(auth.router)
 app.include_router(me.router)
 app.include_router(chat.router)
+app.include_router(admin.router)
+app.include_router(ui.router)
 
 async def get_db_health():
     engine = create_async_engine(settings.database_url)
