@@ -59,3 +59,19 @@
   - `python scripts/ask.py "What is the attendance policy?"` to hit the CLI question entrypoint.
   - `make test` to run RAG evaluation boundaries.
 - **Known Issues:** None.
+
+## Phase 4: Complete the LangGraph assistant
+- **Status:** Done
+- **Decisions Made:**
+  - Added full graph logic representing `messages`, `intent`, `retrieved_docs`, `confidence`, `tool_results`, `retry_count`, `cache_hit`, and `final_answer`.
+  - Segregated control flow via intent classification: `personal_data`, `knowledge`, `chitchat`, and `unknown`.
+  - Set up `guardrails_in` analyzing inputs for excessive length or prompt injection keywords.
+  - Created `guardrails_out` checking the final answer for leaked system prompts or cross-student ID boundaries (rejects outputs containing STUXXX of other users).
+  - Setup `Redis` caching via `semantic_search_cache` keyed by semantic similarity for queries.
+  - Wrote strict `tool_agent` nodes where the tool schema does *not* expose `student_id` to the LLM (bypassing injection capabilities), and it relies entirely on server-side state config. 
+  - LangSmith tracing enriched with hashed tags (`intent_pending`, `env_prod`, `route_chat`) and Postgres checkpointer config logic placed in endpoint.
+  - Tests covering prompt injections, knowledge routes, cross-student leaks logic built against fake environments seamlessly. 
+- **How to run:**
+  - Invoke `POST /chat/` using the student bearer token and a `{"message": "string"}` payload.
+  - Returns Server-Sent Events (SSE) `application/x-ndjson` streaming response containing tokens and final outputs.
+- **Known Issues:** None.

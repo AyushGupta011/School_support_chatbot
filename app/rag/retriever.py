@@ -24,7 +24,7 @@ def reciprocal_rank_fusion(vector_rows, fts_rows, top_k=5, k_rrf=60):
     return [docs[cid] for cid in sorted_cids]
 
 @traceable(name="hybrid_retrieve")
-async def retrieve_chunks(session: AsyncSession, query: str, embeddings: Embeddings, top_k: int = 5, filter_dict: dict = None):
+async def retrieve_chunks(session: AsyncSession, query: str, embeddings: Embeddings, top_k: int = 5, filter_dict: dict | None = None):
     query_emb = embeddings.embed_query(query)
     
     # Vector Search
