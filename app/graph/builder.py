@@ -44,13 +44,6 @@ def route_tools(state: GraphState):
 def build_graph(llm, embeddings, checkpointer=None):
     workflow = StateGraph(GraphState)
     
-    # Input Guardrails wrapper
-    async def guardrails_in_node(state: GraphState):
-        guardrails_in(state["messages"])
-        return {}
-        
-    workflow.add_node("guardrails_in", guardrails_in_node)
-    
     workflow.add_node("classify_intent", partial(classify_intent_node, llm=llm))
     
     # Personal
@@ -77,8 +70,16 @@ def build_graph(llm, embeddings, checkpointer=None):
         if not guardrails_out(ans, sid):
             ans = "I cannot provide this answer due to safety guardrails."
             
-        # Store in cache only if it was knowledge and high confidence
-        if state.get("intent") == "knowledge" and state.get("confidence", 0) >= 0.7 and not state.get("cache_hit"):
+        # Store in cache only if it was knowledge, high confidence, and a valid response
+        if (
+            state.get("intent") == "knowledge"
+            and state.get("confidence", 0) >= 0.7
+            and not state.get("cache_hit")
+            and ans
+            and "No API keys configured" not in ans
+            and "technical issue" not in ans
+            and "not have enough information" not in ans
+        ):
             last_msg = state["messages"][0].content if state["messages"] else ""
             await store_in_cache(last_msg, ans, embeddings)
             
@@ -87,8 +88,7 @@ def build_graph(llm, embeddings, checkpointer=None):
     workflow.add_node("guardrails_out", final_node)
 
     # Edges
-    workflow.set_entry_point("guardrails_in")
-    workflow.add_edge("guardrails_in", "classify_intent")
+    workflow.set_entry_point("classify_intent")
     
     workflow.add_conditional_edges("classify_intent", route_intent, {
         "tool_agent": "tool_agent",

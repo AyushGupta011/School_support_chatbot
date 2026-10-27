@@ -20,27 +20,33 @@ app.include_router(chat.router)
 app.include_router(admin.router)
 app.include_router(ui.router)
 
+import asyncio
+
 async def get_db_health():
-    engine = create_async_engine(settings.database_url)
     try:
-        async with engine.connect():
-            return "ok"
+        engine = create_async_engine(settings.database_url, connect_args={"timeout": 2} if "postgresql" in settings.database_url else {})
+        try:
+            async with asyncio.timeout(2.0):
+                async with engine.connect():
+                    return "ok"
+        finally:
+            await engine.dispose()
     except Exception as e:  # noqa: BLE001
         logger.error(f"Postgres health check failed: {e}")
         return "error"
-    finally:
-        await engine.dispose()
 
 async def get_redis_health():
+    redis = None
     try:
-        redis = Redis.from_url(settings.redis_url)
-        await redis.ping()
-        return "ok"
+        redis = Redis.from_url(settings.redis_url, socket_connect_timeout=2, socket_timeout=2)
+        async with asyncio.timeout(2.0):
+            await redis.ping()
+            return "ok"
     except Exception as e:  # noqa: BLE001
         logger.error(f"Redis health check failed: {e}")
         return "error"
     finally:
-        if 'redis' in locals():
+        if redis:
             await redis.close()
 
 @app.get("/health")

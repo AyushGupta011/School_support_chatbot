@@ -87,3 +87,23 @@ async def test_sse_streaming_and_feedback(setup_api_db):
         # Feedback
         res_fb = await client.post("/chat/feedback", headers={"Authorization": f"Bearer {token}"}, json={"run_id": "fake", "score": 1})
         assert res_fb.status_code == 200
+
+@pytest.mark.asyncio
+async def test_sessions_and_history(setup_api_db):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        res = await client.post("/auth/login", data={"username": "demo_student_1", "password": "demopass"})
+        token = res.json()["access_token"]
+        
+        # Create session
+        res_sess = await client.post("/chat/sessions", headers={"Authorization": f"Bearer {token}"}, json={"title": "Admissions Query"})
+        assert res_sess.status_code == 200
+        sess_id = res_sess.json()["id"]
+        
+        # List sessions
+        res_list = await client.get("/chat/sessions", headers={"Authorization": f"Bearer {token}"})
+        assert res_list.status_code == 200
+        assert any(s["id"] == sess_id for s in res_list.json())
+        
+        # Delete session
+        res_del = await client.delete(f"/chat/sessions/{sess_id}", headers={"Authorization": f"Bearer {token}"})
+        assert res_del.status_code == 200

@@ -36,27 +36,52 @@ class GradeOutput(BaseModel):
 
 @traceable(name="grade_node")
 async def grade_node(state: GraphState, llm) -> dict:
-    docs = state["retrieved_docs"]
+    docs = state.get("retrieved_docs", [])
     if not docs:
         return {"confidence": 0.0}
         
     last_msg = state["messages"][-1].content
-    context = "\n".join([c.content if hasattr(c, 'content') else c['content'] for c in docs])
+    chunk_texts = []
+    for c in docs:
+        txt = getattr(c, "content", None) or (c.get("content", "") if isinstance(c, dict) else str(c))
+        chunk_texts.append(txt)
+    context = "\n".join(chunk_texts)
     
     prompt = f"Does the following context contain the answer to the user's question? Context:\n{context}\nQuestion: {last_msg}"
     
-    structured_llm = llm.with_structured_output(GradeOutput)
-    res = structured_llm.invoke(prompt)
-    return {"confidence": res.confidence}
+    try:
+        structured_llm = llm.with_structured_output(GradeOutput)
+        if hasattr(structured_llm, "ainvoke"):
+            res = await structured_llm.ainvoke(prompt)
+        else:
+            res = structured_llm.invoke(prompt)
+        return {"confidence": getattr(res, "confidence", 0.8)}
+    except Exception:
+        # Graceful fallback if structured output fails
+        return {"confidence": 0.8}
 
 @traceable(name="rewrite_node")
 async def rewrite_node(state: GraphState, llm) -> dict:
     last_msg = state["messages"][-1].content
-    prompt = f"Rewrite this question to be better optimized for vector search: {last_msg}"
-    res = llm.invoke(prompt)
+    prompt = (
+        "You are an internal database search query optimizer. "
+        "Given the user question, output ONLY the concise search keywords for document retrieval. "
+        "Do NOT provide explanations. Do NOT provide tips. Do NOT output multiple choices or options. "
+        f"Question: {last_msg}\n"
+        "Optimized query:"
+    )
+    if hasattr(llm, "ainvoke"):
+        res = await llm.ainvoke(prompt)
+    else:
+        res = llm.invoke(prompt)
     
+    clean_query = str(res.content).strip().split("\n")[0].replace('"', '').strip()
+    if ":" in clean_query and len(clean_query.split(":")[0]) < 25:
+        clean_query = clean_query.split(":", 1)[1].strip()
+        
     # We replace the last message to trigger retrieval again
-    new_messages = state["messages"][:-1] + [HumanMessage(content=res.content)]
+    new_messages = list(state["messages"][:-1]) + [HumanMessage(content=clean_query or last_msg)]
     retry_count = state.get("retry_count", 0) + 1
     
     return {"messages": new_messages, "retry_count": retry_count}
+

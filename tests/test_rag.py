@@ -50,20 +50,32 @@ async def test_rerank_fallback():
 
 @pytest.mark.asyncio
 async def test_generator_refusal():
-    state = {"question": "What is the secret formula?", "chunks": [], "student_id": 1, "role": "student", "answer": ""}
-    res = await generate_node(state, FakeLLM(), {})
-    assert "don't know" in res["answer"].lower()
+    from langchain_core.messages import HumanMessage
+    state = {
+        "messages": [HumanMessage(content="What is the secret formula?")],
+        "retrieved_docs": [],
+        "student_id": 1,
+        "role": "student"
+    }
+    res = await generate_node(state, FakeLLM())
+    assert "don't know" in res["final_answer"].lower()
 
 @pytest.mark.asyncio
 async def test_generator_citation():
+    from langchain_core.messages import HumanMessage
     class FakeChunk:
-        content = "The secret is 42."
+        content = "The secret is 42. Document 1 contains the details."
         def __init__(self):
             self.metadata_json = {"source": "fake.md", "section": "Header 1"}
         
-    state = {"question": "What is the secret?", "chunks": [FakeChunk()], "student_id": 1, "role": "student", "answer": ""}
-    res = await generate_node(state, FakeLLM(), {})
-    assert "[fake.md, Header 1/N/A]" in res["answer"]
+    state = {
+        "messages": [HumanMessage(content="What is the secret?")],
+        "retrieved_docs": [FakeChunk()],
+        "student_id": 1,
+        "role": "student"
+    }
+    res = await generate_node(state, FakeLLM())
+    assert "[fake.md, Header 1]" in res["final_answer"]
 
 @pytest.mark.asyncio
 async def test_idempotent_ingestion():

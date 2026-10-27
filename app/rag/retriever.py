@@ -37,12 +37,23 @@ async def retrieve_chunks(session: AsyncSession, query: str, embeddings: Embeddi
     vector_rows = vector_res.all()
     
     # FTS Search
-    fts_stmt = select(Chunk.id, Chunk.content, Chunk.metadata_json, func.ts_rank_cd(Chunk.tsv, func.plainto_tsquery('english', query)).label("rank")).where(Chunk.tsv.op("@@")(func.plainto_tsquery('english', query)))
-    if filter_dict:
-        for k, v in filter_dict.items():
-            fts_stmt = fts_stmt.where(Chunk.metadata_json[k].astext == str(v))
-    fts_stmt = fts_stmt.order_by(func.ts_rank_cd(Chunk.tsv, func.plainto_tsquery('english', query)).desc()).limit(top_k * 2)
-    fts_res = await session.execute(fts_stmt)
-    fts_rows = fts_res.all()
-    
+    import re
+    words = [re.sub(r'\W+', '', w) for w in query.split() if len(re.sub(r'\W+', '', w)) > 1]
+    if words:
+        fts_query = " | ".join(words)
+        fts_stmt = select(
+            Chunk.id,
+            Chunk.content,
+            Chunk.metadata_json,
+            func.ts_rank_cd(Chunk.tsv, func.to_tsquery('english', fts_query)).label("rank")
+        ).where(Chunk.tsv.op("@@")(func.to_tsquery('english', fts_query)))
+        if filter_dict:
+            for k, v in filter_dict.items():
+                fts_stmt = fts_stmt.where(Chunk.metadata_json[k].astext == str(v))
+        fts_stmt = fts_stmt.order_by(func.ts_rank_cd(Chunk.tsv, func.to_tsquery('english', fts_query)).desc()).limit(top_k * 2)
+        fts_res = await session.execute(fts_stmt)
+        fts_rows = fts_res.all()
+    else:
+        fts_rows = []
+        
     return reciprocal_rank_fusion(vector_rows, fts_rows, top_k=top_k)

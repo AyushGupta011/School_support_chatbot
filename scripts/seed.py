@@ -1,6 +1,11 @@
 import asyncio
+import os
 import random
+import sys
 from datetime import date, timedelta
+
+# Ensure project root is in sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from faker import Faker
 from passlib.hash import argon2

@@ -16,8 +16,9 @@ def chunk_markdown(content: str, source: str) -> list[dict]:
     chunks = []
     for split in splits:
         section = " > ".join([v for k, v in split.metadata.items() if k.startswith("Header")])
+        formatted_content = f"[{source} > {section}]\n{split.page_content}" if section else split.page_content
         chunks.append({
-            "content": split.page_content,
+            "content": formatted_content,
             "metadata": {
                 "source": source,
                 "section": section,

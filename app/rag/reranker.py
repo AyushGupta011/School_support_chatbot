@@ -19,7 +19,11 @@ async def rerank(query: str, chunks: list, mode: str = "vector_only"):
                 
             compressor = CohereRerank(cohere_api_key=cohere_api_key, top_n=3)
             
-            docs = [Document(page_content=c.content, metadata=c.metadata_json) for c in chunks]
+            docs = []
+            for c in chunks:
+                content = getattr(c, "content", None) or (c.get("content", "") if isinstance(c, dict) else str(c))
+                meta = getattr(c, "metadata_json", None) or (c.get("metadata_json", {}) if isinstance(c, dict) else {})
+                docs.append(Document(page_content=content, metadata=meta))
             compressed_docs = compressor.compress_documents(docs, query)
             
             return [{"content": d.page_content, "metadata_json": d.metadata} for d in compressed_docs]

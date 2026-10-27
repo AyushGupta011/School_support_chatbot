@@ -36,9 +36,15 @@ def guardrails_out(answer: str, current_student_id: int | None) -> bool:
             if m != sid_str:
                 return False
                 
-    leaked_system_text = ["You are a university assistant", "Context:"]
+    leaked_system_text = [
+        "System prompt",
+        "You are an assistant",
+        "You are a university assistant",
+        "Answer ONLY based on the context. Cite sources"
+    ]
     for t in leaked_system_text:
-        if t in answer:
+        if t.lower() in answer.lower():
+            return False
             return False
             
     return True

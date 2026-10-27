@@ -32,3 +32,5 @@ def setup_logging():
         stream=sys.stdout,
         level=logging.INFO,
     )
+
+logger = structlog.get_logger()

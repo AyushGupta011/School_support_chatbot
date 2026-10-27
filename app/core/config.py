@@ -1,18 +1,26 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/school_chatbot"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/school_chatbot"
     redis_url: str = "redis://localhost:6379/0"
     
     jwt_secret: SecretStr = SecretStr("default_secret")
     jwt_expiry_minutes: int = 60
     
-    llm_provider: str = "openai"
-    llm_model: str = "gpt-4o"
+    llm_provider: str = "groq"
+    llm_model: str = "qwen/qwen3.8-27b"
     embedding_model: str = "text-embedding-3-small"
     reranker_choice: str = "cohere"
+    
+    openai_api_key: SecretStr | None = None
+    groq_api_key: SecretStr | None = None
+    google_api_key: SecretStr | None = None
+    nvidia_api_key: SecretStr | None = None
     
     langchain_tracing_v2: bool = False
     langchain_api_key: SecretStr | None = None
@@ -28,3 +36,4 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()
+

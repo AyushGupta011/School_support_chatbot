@@ -117,4 +117,50 @@ class UnansweredQuery(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     query: Mapped[str]
     student_id: Mapped[int] = mapped_column(ForeignKey("students.id"))
+    status: Mapped[str] = mapped_column(default="pending")  # 'pending', 'resolved'
+    resolution: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    resolved_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+    id: Mapped[str] = mapped_column(primary_key=True, index=True)  # UUID string
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
+    title: Mapped[str] = mapped_column(default="New Conversation")
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan", order_by="ChatMessage.created_at")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("chat_sessions.id"), index=True)
+    role: Mapped[str]  # 'user', 'assistant', 'system'
+    content: Mapped[str] = mapped_column(Text)
+    run_id: Mapped[str | None] = mapped_column(nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    session = relationship("ChatSession", back_populates="messages")
+
+class LeaveApplication(Base):
+    __tablename__ = "leave_applications"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
+    start_date: Mapped[str]
+    end_date: Mapped[str]
+    reason: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(default="submitted")  # 'submitted', 'approved', 'rejected'
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+class FacultyAppointment(Base):
+    __tablename__ = "faculty_appointments"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
+    faculty_id: Mapped[int | None] = mapped_column(ForeignKey("faculty.id"), nullable=True)
+    faculty_name: Mapped[str]
+    appointment_date: Mapped[str]
+    appointment_time: Mapped[str]
+    reason: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(default="confirmed")
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

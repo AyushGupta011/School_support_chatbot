@@ -106,3 +106,21 @@
   - `python evals/ci_gate.py` returns CI exit statuses corresponding to regression tests.
 - **Known Issues:** 
   - Host environment continues failing to orchestrate `asyncpg` bindings requiring pure-python bypasses where necessary.
+
+## Phase 7: Production Bug Fixes, Chat Persistence & Enterprise Academic UI
+- **Status:** Done
+- **Decisions Made:**
+  - **Fixed Reranker Dict vs Row Defect:** Handled both dictionary and ORM row instances uniformly in `app/rag/reranker.py` and `app/graph/nodes/general.py`, preventing `AttributeError` during hybrid rerank generation.
+  - **Non-Blocking Async Event Loop:** Upgraded all graph nodes (`generate_node`, `chitchat_node`, `tool_agent_node`, `grade_node`, `rewrite_node`, `classify_intent_node`) to use `await ainvoke()`, preventing FastAPI event loop lockups.
+  - **SQLAlchemy 2.0 Ingest Fix:** Wrapped raw SQL `UPDATE` statement in `sqlalchemy.text()` and fixed nested indentation in `app/rag/ingest.py`.
+  - **CLI Script Sync:** Corrected `scripts/ask.py` parameter order and message schema for seamless terminal testing.
+  - **Multi-Turn Chat Persistence:** Added `ChatSession` and `ChatMessage` models with thread-scoped `MemorySaver` checkpointer in LangGraph. Implemented `/chat/sessions` CRUD endpoints and active session message retrieval.
+  - **Action-Oriented ERP Tools:** Implemented `generate_fee_payment_link`, `submit_leave_application`, and `book_faculty_appointment` tools alongside `LeaveApplication` and `FacultyAppointment` tables.
+  - **Human-in-the-Loop Admin Workflow:** Implemented `GET /admin/unanswered`, `POST /admin/unanswered/{id}/resolve` (with automated knowledge base learning option), and `GET /admin/stats`.
+  - **Alembic Migration 002:** Added migration script covering chat sessions, messages, leave applications, faculty appointments, and query resolution columns.
+  - **Next.js Enterprise Portal:** Replaced the anime-themed frontend with an institutional **Apex University** student portal featuring a thread drawer, streaming SSE outputs, quick action chips, and verified response badges.
+- **How to run:**
+  - `alembic upgrade head`
+  - Access `http://localhost:3000` for Next.js frontend or `http://localhost:8000/docs` for FastAPI Swagger API.
+  - Login with `demo_student_1` / `demopass`.
+
